@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://linkdein-automation-backend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
