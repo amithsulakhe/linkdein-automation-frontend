@@ -80,6 +80,19 @@ export default function RegisterPage() {
                 Sign in
               </Link>
             </p>
+            <p className="text-center text-sm text-muted-foreground">
+              <Link to="/home" className="underline-offset-4 hover:underline">
+                Home
+              </Link>
+              {' · '}
+              <Link to="/privacy" className="underline-offset-4 hover:underline">
+                Privacy
+              </Link>
+              {' · '}
+              <Link to="/terms" className="underline-offset-4 hover:underline">
+                Terms
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
