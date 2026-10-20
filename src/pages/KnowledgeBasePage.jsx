@@ -1,6 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+
+function formatUploadedOn(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return '—';
@@ -25,13 +40,20 @@ export default function KnowledgeBasePage() {
   const [input, setInput] = useState('');
   const [asking, setAsking] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 5, total: 0, totalPages: 1 });
   const { user } = useAuth();
 
-  const load = () => api.get('/documents').then((res) => setDocs(res.data.data.items || []));
+  const load = useCallback(() => {
+    return api.get('/documents', { params: { page } }).then((res) => {
+      setDocs(res.data.data.items || []);
+      if (res.data.data.pagination) setPagination(res.data.data.pagination);
+    });
+  }, [page]);
 
   useEffect(() => {
     load().catch((err) => setError(err.message));
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     if (!docs.some((doc) => doc.processingStatus === 'pending' || doc.processingStatus === 'processing')) return undefined;
@@ -39,7 +61,7 @@ export default function KnowledgeBasePage() {
       load().catch(() => {});
     }, 3000);
     return () => clearInterval(timer);
-  }, [docs]);
+  }, [docs, load]);
 
   const onUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -51,7 +73,8 @@ export default function KnowledgeBasePage() {
     form.append('file', file);
     try {
       await api.post('/documents/upload', form);
-      await load();
+      if (page !== 1) setPage(1);
+      else await load();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -76,6 +99,7 @@ export default function KnowledgeBasePage() {
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Uploaded by</th>
+              <th className="px-4 py-3">Uploaded on</th>
               <th className="px-4 py-3">Pages</th>
               <th className="px-4 py-3">Size</th>
               <th className="px-4 py-3">Status</th>
@@ -85,7 +109,7 @@ export default function KnowledgeBasePage() {
           <tbody>
             {docs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   No documents yet.
                 </td>
               </tr>
@@ -96,6 +120,7 @@ export default function KnowledgeBasePage() {
                     {doc.originalFilename}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{doc.uploadedBy || user?.displayName || '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatUploadedOn(doc.createdAt)}</td>
                   <td className="px-4 py-3">{doc.pageCount ?? '—'}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatSize(doc.fileSize)}</td>
                   <td className="px-4 py-3">
@@ -153,6 +178,31 @@ export default function KnowledgeBasePage() {
           </tbody>
         </table>
       </div>
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>
+          {pagination.total === 0
+            ? '0'
+            : `${(pagination.page - 1) * pagination.limit + 1}–${Math.min(pagination.page * pagination.limit, pagination.total)}`}{' '}
+          of {pagination.total}
+        </span>
+        <div className="flex items-center gap-2">
+          <span>
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button type="button" variant="outline" size="sm" disabled={pagination.page <= 1} onClick={() => setPage((current) => current - 1)}>
+            Prev
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pagination.page >= pagination.totalPages}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
       {activeDoc ? (
         <div className="card flex h-[28rem] flex-col p-4">
           <div className="mb-3">
@@ -202,7 +252,8 @@ export default function KnowledgeBasePage() {
         setConversationId(null);
         setMessages([]);
       }
-      await load();
+      if (docs.length === 1 && page > 1) setPage((current) => current - 1);
+      else await load();
     } catch (err) {
       setError(err.message);
     } finally {
