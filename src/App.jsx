@@ -14,7 +14,6 @@ import ComposePostPage from './pages/ComposePostPage';
 import ApprovalQueuePage from './pages/ApprovalQueuePage';
 import ApprovalReviewPage from './pages/ApprovalReviewPage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
-import ChatbotPage from './pages/ChatbotPage';
 import SettingsPage from './pages/SettingsPage';
 
 function ProtectedRoute({ children }) {
@@ -61,7 +60,6 @@ export default function App() {
             <Route path="generator" element={<GeneratorPage />} />
             <Route path="approval-queue" element={<ApprovalQueuePage />} />
             <Route path="knowledge-base" element={<KnowledgeBasePage />} />
-            <Route path="chatbot" element={<ChatbotPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

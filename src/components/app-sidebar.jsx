@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
-  Bot,
   CalendarDays,
   CheckSquare,
   LayoutDashboard,
@@ -33,7 +32,6 @@ const navItems = [
   { to: '/generator', label: 'AI Generator', icon: Sparkles, tone: 'bg-fuchsia-500/15 text-fuchsia-500' },
   { to: '/approval-queue', label: 'Approval Queue', icon: CheckSquare, tone: 'bg-teal-500/15 text-teal-500' },
   { to: '/knowledge-base', label: 'Knowledge Base', icon: Library, tone: 'bg-orange-500/15 text-orange-500' },
-  { to: '/chatbot', label: 'AI Chatbot', icon: Bot, tone: 'bg-indigo-500/15 text-indigo-500' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'bg-rose-500/15 text-rose-500' },
 ];
 
