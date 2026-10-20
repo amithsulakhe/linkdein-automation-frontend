@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 function formatSize(bytes) {
   if (!bytes && bytes !== 0) return '—';
@@ -23,6 +24,8 @@ export default function KnowledgeBasePage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [asking, setAsking] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const { user } = useAuth();
 
   const load = () => api.get('/documents').then((res) => setDocs(res.data.data.items || []));
 
@@ -72,6 +75,7 @@ export default function KnowledgeBasePage() {
           <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Uploaded by</th>
               <th className="px-4 py-3">Pages</th>
               <th className="px-4 py-3">Size</th>
               <th className="px-4 py-3">Status</th>
@@ -81,7 +85,7 @@ export default function KnowledgeBasePage() {
           <tbody>
             {docs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   No documents yet.
                 </td>
               </tr>
@@ -91,6 +95,7 @@ export default function KnowledgeBasePage() {
                   <td className="max-w-xs truncate px-4 py-3 font-medium" title={doc.originalFilename}>
                     {doc.originalFilename}
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground">{doc.uploadedBy || user?.displayName || '—'}</td>
                   <td className="px-4 py-3">{doc.pageCount ?? '—'}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatSize(doc.fileSize)}</td>
                   <td className="px-4 py-3">
@@ -131,6 +136,14 @@ export default function KnowledgeBasePage() {
                         }}
                       >
                         Ask
+                      </button>
+                      <button
+                        type="button"
+                        className="font-medium text-rose-500 hover:underline disabled:opacity-40"
+                        disabled={deletingId === doc._id}
+                        onClick={() => remove(doc)}
+                      >
+                        {deletingId === doc._id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   </td>
@@ -176,6 +189,26 @@ export default function KnowledgeBasePage() {
       ) : null}
     </div>
   );
+
+  async function remove(doc) {
+    if (deletingId) return;
+    if (!window.confirm(`Delete ${doc.originalFilename}? This cannot be undone.`)) return;
+    setDeletingId(doc._id);
+    setError('');
+    try {
+      await api.delete(`/documents/${doc._id}`);
+      if (activeDoc?._id === doc._id) {
+        setActiveDoc(null);
+        setConversationId(null);
+        setMessages([]);
+      }
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function ask() {
     if (!input.trim() || !conversationId || !activeDoc || asking) return;
